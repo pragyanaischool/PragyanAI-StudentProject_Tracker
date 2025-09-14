@@ -20,7 +20,6 @@ if 'selected_project_id' not in st.session_state:
 # --- Page Content ---
 PROJECT_ID = st.session_state['selected_project_id']
 MEMBER_ID = st.session_state['user_info']['id']
-GROQ_API_KEY = st.session_state.get("groq_api_key")
 
 st.header("🤖 AI Assistant & 📚 Shared Resources")
 st.info("Your central hub for getting AI-powered help and accessing materials shared by your project manager.")
@@ -41,9 +40,42 @@ tab1, tab2 = st.tabs(["🤖 AI Assistant", "📚 Manager's Resources"])
 
 with tab1:
     st.subheader("Get AI-Powered Guidance")
-    
+
+    # --- API Key and Model Configuration ---
+    if 'groq_api_key' not in st.session_state:
+        st.session_state.groq_api_key = ''
+
+    with st.expander("⚙️ AI Configuration", expanded=not st.session_state.groq_api_key):
+        groq_api_key_input = st.text_input(
+            "Enter your Groq API Key",
+            type="password",
+            value=st.session_state.groq_api_key,
+            help="Get your free API key from [Groq Console](https://console.groq.com/keys)"
+        )
+        
+        # Available Models on Groq
+        llm_options = {
+            "Llama3 70b": "llama3-70b-8192",
+            "Llama3 8b": "llama3-8b-8192",
+            "Mixtral 8x7b": "mixtral-8x7b-32768",
+            "Gemma 7b": "gemma-7b-it",
+        }
+        
+        selected_llm_name = st.selectbox(
+            "Choose your AI Model",
+            options=list(llm_options.keys()),
+            index=0 # Default to Llama3 70b
+        )
+        st.session_state.selected_model = llm_options[selected_llm_name]
+
+        if groq_api_key_input != st.session_state.groq_api_key:
+            st.session_state.groq_api_key = groq_api_key_input
+            st.rerun()
+
+    GROQ_API_KEY = st.session_state.get("groq_api_key")
+
     if not GROQ_API_KEY:
-        st.warning("Please enter your Groq API Key in the sidebar on the main page to enable the AI Assistant.")
+        st.warning("Please enter your Groq API Key in the configuration section above to enable the AI Assistant.")
         st.stop()
 
     # --- Task Selection for Context ---
@@ -66,7 +98,7 @@ with tab1:
         st.divider()
 
         # --- AI Interaction ---
-        st.markdown(f"**Getting help for:** `{task_details['title']}`")
+        st.markdown(f"**Getting help for:** `{task_details['title']}` (using `{selected_llm_name}`)")
         
         col1, col2, col3 = st.columns(3)
         # Pre-defined prompts
@@ -90,7 +122,11 @@ with tab1:
 
             with st.chat_message("assistant"):
                 try:
-                    chat = ChatGroq(temperature=0.7, groq_api_key=GROQ_API_KEY, model_name="llama3-70b-8192")
+                    chat = ChatGroq(
+                        temperature=0.7, 
+                        groq_api_key=GROQ_API_KEY, 
+                        model_name=st.session_state.get("selected_model", "llama3-70b-8192")
+                    )
                     
                     system_prompt = (
                         "You are an expert project mentor AI. Your goal is to help a student developer succeed with their assigned task. "
@@ -158,4 +194,3 @@ with tab2:
                 links = resp['reference_links'].strip().split('\n')
                 for link in links:
                     st.markdown(f"- {link.strip()}")
-
