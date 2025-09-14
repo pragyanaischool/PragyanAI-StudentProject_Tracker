@@ -28,7 +28,7 @@ def init_db():
             admin = conn.execute("SELECT * FROM super_admins WHERE username = 'SateeshAmbesange'").fetchone()
             if not admin:
                 hashed_password = get_password_hash("Kanasu@1976")
-                conn.execute("INSERT INTO super_admins (username, password) VALUES (?, ?)", ("Sateesh", hashed_password))
+                conn.execute("INSERT INTO super_admins (username, password) VALUES (?, ?)", ("SateeshAmbesange", hashed_password))
                 conn.commit()
             conn.close()
             st.session_state['db_initialized'] = True
