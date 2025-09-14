@@ -4,3 +4,7 @@ numpy
 plotly
 seaborn
 passlib[bcrypt]
+langchain
+langchain-core
+langchain-community
+langchain-groq
