@@ -10,10 +10,18 @@ DROP TABLE IF EXISTS project_members;
 DROP TABLE IF EXISTS resources;
 DROP TABLE IF EXISTS projects;
 DROP TABLE IF EXISTS team_members;
-DROP TABLE IF EXISTS admins;
+DROP TABLE IF EXISTS project_managers;
+DROP TABLE IF EXISTS super_admins;
 
--- Admins Table: For project managers
-CREATE TABLE admins (
+-- Super Admins Table
+CREATE TABLE super_admins (
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+username TEXT UNIQUE NOT NULL,
+password TEXT NOT NULL
+);
+
+-- Project Managers Table
+CREATE TABLE project_managers (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 username TEXT UNIQUE NOT NULL,
 password TEXT NOT NULL
@@ -32,9 +40,9 @@ CREATE TABLE projects (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 name TEXT NOT NULL,
 description TEXT,
-problem_statement TEXT, -- For AI context
+problem_statement TEXT,
 manager_id INTEGER,
-FOREIGN KEY (manager_id) REFERENCES admins(id)
+FOREIGN KEY (manager_id) REFERENCES project_managers(id)
 );
 
 -- Project Members Junction Table: To link members to projects
@@ -52,7 +60,7 @@ id INTEGER PRIMARY KEY AUTOINCREMENT,
 project_id INTEGER NOT NULL,
 title TEXT NOT NULL,
 description TEXT,
-refined_description TEXT, -- For AI-refined text
+refined_description TEXT,
 FOREIGN KEY (project_id) REFERENCES projects(id)
 );
 
@@ -79,13 +87,13 @@ FOREIGN KEY (requirement_id) REFERENCES requirements(id)
 CREATE TABLE tasks (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 project_id INTEGER NOT NULL,
-requirement_id INTEGER, -- Link task to a requirement
+requirement_id INTEGER,
 title TEXT NOT NULL,
 description TEXT,
 assigned_to_id INTEGER,
-status TEXT DEFAULT 'To Do', -- e.g., To Do, In Progress, Done
+status TEXT DEFAULT 'To Do',
 due_date TEXT,
-completion_date TEXT, -- For analytics
+completion_date TEXT,
 FOREIGN KEY (project_id) REFERENCES projects(id),
 FOREIGN KEY (requirement_id) REFERENCES requirements(id),
 FOREIGN KEY (assigned_to_id) REFERENCES team_members(id)
@@ -96,7 +104,7 @@ CREATE TABLE task_issues (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 task_id INTEGER NOT NULL,
 member_id INTEGER NOT NULL,
-issue_type TEXT NOT NULL, -- e.g., Doubt, Dependency, Question
+issue_type TEXT NOT NULL,
 issue_text TEXT NOT NULL,
 needs_meeting BOOLEAN DEFAULT 0,
 is_resolved BOOLEAN DEFAULT 0,
@@ -109,13 +117,12 @@ FOREIGN KEY (member_id) REFERENCES team_members(id)
 CREATE TABLE issue_responses (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 issue_id INTEGER NOT NULL,
-responder_id INTEGER NOT NULL, -- Admin/Manager ID
+responder_id INTEGER NOT NULL,
 response_text TEXT NOT NULL,
-response_type TEXT, -- e.g., Clarification, Hint, AI Suggestion
+response_type TEXT,
 reference_links TEXT,
 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (issue_id) REFERENCES task_issues(id),
-FOREIGN KEY (responder_id) REFERENCES admins(id)
+FOREIGN KEY (issue_id) REFERENCES task_issues(id)
 );
 
 -- Progress Updates Table
@@ -125,7 +132,7 @@ task_id INTEGER NOT NULL,
 member_id INTEGER NOT NULL,
 project_id INTEGER NOT NULL,
 summary TEXT NOT NULL,
-status TEXT NOT NULL, -- e.g., On Track, Blocked, Completed
+status TEXT NOT NULL,
 code_link TEXT,
 hours_spent REAL,
 submission_date TEXT,
